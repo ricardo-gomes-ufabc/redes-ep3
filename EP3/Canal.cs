@@ -86,17 +86,17 @@ public class Canal
 
     #region Envio e Recebimento
 
-    private byte[] SegmentoConfiavelParaByteArray(SegmentoConfiavel segmentoConfiavel)
+    private byte[] SegmentoConfiavelParaByteArray(DatagramaInfo datagramaInfo)
     {
-        return Encoding.UTF8.GetBytes(JsonSerializer.Serialize(segmentoConfiavel));
+        return Encoding.UTF8.GetBytes(JsonSerializer.Serialize(datagramaInfo));
     }
 
-    private SegmentoConfiavel? ByteArrayParaSegmentoConfiavel(byte[] byteArray)
+    private DatagramaInfo? ByteArrayParaSegmentoConfiavel(byte[] byteArray)
     {
-        return JsonSerializer.Deserialize<SegmentoConfiavel>(Encoding.UTF8.GetString(byteArray));
+        return JsonSerializer.Deserialize<DatagramaInfo>(Encoding.UTF8.GetString(byteArray));
     }
 
-    public void EnviarSegmento(byte[]? bytesSegmentoConfiavel)
+    public void EnviarDatagramaInfo(byte[]? bytesDatagramaInfo)
     {
         try
         {
@@ -105,15 +105,15 @@ public class Canal
                 _totalMensagensEnviadas++;
             }
 
-            if (bytesSegmentoConfiavel != null)
+            if (bytesDatagramaInfo != null)
             {
-                _socket.SendAsync(bytesSegmentoConfiavel, _pontoConexaoRemoto);
+                _socket.SendAsync(bytesDatagramaInfo, _pontoConexaoRemoto);
             }
         }
         catch { }
     }
 
-    public SegmentoConfiavel? ReceberSegmento(CancellationToken tokenCancelamento)
+    public DatagramaInfo? ReceberSegmento(CancellationToken tokenCancelamento)
     {
         try
         {
@@ -188,7 +188,7 @@ public class Canal
         {
             _totalMensagensEliminadas++;
 
-            EnviarSegmento(null);
+            EnviarDatagramaInfo(null);
 
             Console.WriteLine($"Mensagem {tipoMensagem} id {id} eliminada.");
 
@@ -203,7 +203,7 @@ public class Canal
 
             byte[] bytesSegmentoDuplicado = SegmentoConfiavelParaByteArray(segmentoConfiavel);
 
-            EnviarSegmento(bytesSegmentoDuplicado);
+            EnviarDatagramaInfo(bytesSegmentoDuplicado);
 
             Console.WriteLine($"Mensagem {tipoMensagem} id {id} duplicada.");
         }
@@ -232,7 +232,7 @@ public class Canal
             Console.WriteLine($"Mensagem {tipoMensagem} id {id} atrasada.");
         }
 
-        EnviarSegmento(bytesSegmento);
+        EnviarDatagramaInfo(bytesSegmento);
     }
 
     private byte[] GerarCheckSum(SegmentoConfiavel segmentoConfiavel)
