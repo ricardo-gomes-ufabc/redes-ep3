@@ -12,19 +12,20 @@ public class Roteador
 
     private bool _roteadorAtivo = true;
 
+    private const int OffsetPorta = 10000;
+    private const int Infinito = int.MaxValue;
+
     private Canal _canal;
     private List<IPEndPoint> vizinhos = new List<IPEndPoint>();
 
     private int[,] _matrizAdjacencia;
 
-    private const int OffsetPorta = 10000;
-    private const int Infinito = int.MaxValue;
+    private bool _distanciaAtualizada;
 
     private const int _timeoutMilissegundos = 30000;
     private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
     private Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
     private ElapsedEventHandler _evento;
-    private bool _distanciaAtualizada = false;
 
     public Roteador(int id, int[] vetorDistancias, bool principal)
     {
