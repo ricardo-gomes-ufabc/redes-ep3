@@ -2,12 +2,12 @@
 
 public class DatagramaInfo
 {
-    public int Origem { get; set; }
+    public int OrigemId { get; set; }
     public int[] VetorDistancias { get; set; }
 
-    public DatagramaInfo(int origem, int[] vetorDistancias)
+    public DatagramaInfo(int origemId, int[] vetorDistancias)
     {
-        Origem = origem;
+        OrigemId = origemId;
         VetorDistancias = vetorDistancias;
     }
 }

@@ -78,17 +78,17 @@ public class Canal
 
     #region Envio e Recebimento
 
-    private byte[] SegmentoConfiavelParaByteArray(DatagramaInfo datagramaInfo)
+    private byte[] DatagramaInfoParaByteArray(DatagramaInfo? datagramaInfo)
     {
         return Encoding.UTF8.GetBytes(JsonSerializer.Serialize(datagramaInfo));
     }
 
-    private DatagramaInfo? ByteArrayParaSegmentoConfiavel(byte[] byteArray)
+    private DatagramaInfo? ByteArrayParaDatagramaInfo(byte[] byteArray)
     {
         return JsonSerializer.Deserialize<DatagramaInfo>(Encoding.UTF8.GetString(byteArray));
     }
 
-    public void EnviarDatagramaInfo(DatagramaInfo datagramaInfo, IPEndPoint pontoConexaoRemoto)
+    private void EnviarDatagramaInfo(byte[]? bytesDatagramaInfo, IPEndPoint pontoConexaoRemoto)
     {
         try
         {
@@ -96,8 +96,6 @@ public class Canal
             {
                 _totalMensagensEnviadas++;
             }
-
-            byte[]? bytesDatagramaInfo = SegmentoConfiavelParaByteArray(datagramaInfo);
 
             if (bytesDatagramaInfo != null)
             {
@@ -120,7 +118,7 @@ public class Canal
                 _totalMensagensRecebidas++;
             }
 
-            return ByteArrayParaSegmentoConfiavel(bytesDatagramaInfoRecebido);
+            return ByteArrayParaDatagramaInfo(bytesDatagramaInfoRecebido);
         }
         catch (JsonException)
         {
@@ -138,41 +136,40 @@ public class Canal
 
     #region Aplicação de Propiedades
 
-    public void ProcessarMensagem(DatagramaInfo datagramaInfo)
+    public void ProcessarMensagem(DatagramaInfo datagramaInfo, IPEndPoint pontoConexaoRemoto)
     {
         if (DeveriaAplicarPropriedade(_probabilidadeEliminacao))
         {
             _totalMensagensEliminadas++;
 
-            //EnviarDatagramaInfo(null);
+            EnviarDatagramaInfo(null, pontoConexaoRemoto);
 
             Console.WriteLine($"Mensagem eliminada.");
 
             return;
         }
 
+        byte[] bytesDatagramaInfo = DatagramaInfoParaByteArray(datagramaInfo);
+
         if (DeveriaAplicarPropriedade(_probabilidadeDuplicacao))
         {
             _totalMensagensDuplicadas++;
 
-            //EnviarDatagramaInfo(datagramaInfo);
+            EnviarDatagramaInfo(bytesDatagramaInfo, pontoConexaoRemoto);
 
             Console.WriteLine($"Mensagem duplicada.");
         }
 
-
-        byte[] bytesSegmento = SegmentoConfiavelParaByteArray(datagramaInfo);
-
         if (DeveriaAplicarPropriedade(_probabilidadeCorrupcao))
         {
-            CorromperSegmento(ref bytesSegmento);
+            CorromperSegmento(ref bytesDatagramaInfo);
             _totalMensagensCorrompidas++;
             Console.WriteLine($"Mensagem corrompida.");
         }
 
-        if (bytesSegmento.Length > _tamanhoMaximoBytes)
+        if (bytesDatagramaInfo.Length > _tamanhoMaximoBytes)
         {
-            CortarSegmento(ref bytesSegmento);
+            CortarSegmento(ref bytesDatagramaInfo);
             _totalMensagensCortadas++;
             Console.WriteLine($"Mensagem cortada.");
         }
@@ -184,7 +181,7 @@ public class Canal
             Console.WriteLine($"Mensagem atrasada.");
         }
 
-        //EnviarDatagramaInfo(datagramaInfo);
+        EnviarDatagramaInfo(bytesDatagramaInfo, pontoConexaoRemoto);
     }
 
     private bool DeveriaAplicarPropriedade(int probabilidade)

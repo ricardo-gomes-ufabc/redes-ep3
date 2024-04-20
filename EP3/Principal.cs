@@ -1,28 +1,56 @@
-﻿namespace EP3;
+﻿using System.Threading;
+
+namespace EP3;
 
 public class Principal
 {
     //private static List<Roteador> roteadores = new List<Roteador>();
-    private static List<Threads> roteadores = new List<Threads>();
+    private static List<Thread> threadsRoteadores = new List<Thread>();
 
     private static readonly Random _aleatorio = new Random();
 
     public static void Main(string[] args)
     {
+        Console.WriteLine("Programa Iniciado.");
+
         string caminhoArquivo = $"{AppContext.BaseDirectory}/matriz.txt";
 
         int[,] matriz = CarregarMatriz(caminhoArquivo);
 
-        for (int i = 0; i < matriz.GetLength(0); i++)
-        {
-            //roteadores.Add(new Roteador(i, GetLinha(matriz, i)));
-            roteadores.Add(new Threads(i, GetLinha(matriz, i)));
-        }
-
         int idRoteadorSelecionado = 0;
         //int idRoteadorSelecionado = _aleatorio.Next(minValue: 0, maxValue: matriz.GetLength(dimension: 0));
 
+        for (int i = 0; i < matriz.GetLength(0); i++)
+        {
+            Thread thread;
 
+            if (i != idRoteadorSelecionado)
+            {
+                thread = new Thread(() =>
+                {
+                    Roteador roteador = new Roteador(i, Roteador.GetLinha(matriz, i), false);
+
+                    roteador.ProcessarTabelaRoteamento();
+                });
+            }
+            else
+            {
+                thread = new Thread(() =>
+                {
+                    Roteador roteador = new Roteador(i, Roteador.GetLinha(matriz, i), false);
+
+                    roteador.ProcessarTabelaRoteamento();
+                });
+            }
+
+            threadsRoteadores.Add(thread);
+        }
+
+        threadsRoteadores.ForEach(t => t.Start());
+
+        threadsRoteadores.ForEach(t => t.Join());
+
+        Console.WriteLine("Programa Encerrado.");
     }
 
     private static int[,] CarregarMatriz(string filePath)
@@ -51,12 +79,5 @@ public class Principal
         }
 
         return matriz;
-    }
-
-    public static int[] GetLinha(int[,] matrix, int linha)
-    {
-        return Enumerable.Range(start: 0, matrix.GetLength(dimension: 1))
-                         .Select(x => matrix[linha, x])
-                         .ToArray();
     }
 }

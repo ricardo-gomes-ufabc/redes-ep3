@@ -1,4 +1,5 @@
-﻿using System.Timers;
+﻿using System.Net;
+using System.Timers;
 using Timer = System.Timers.Timer;
 
 
@@ -7,10 +8,12 @@ namespace EP3;
 public class Roteador
 {
     public int Id { get; private set; }
+    public bool Principal { get; private set; }
 
     private bool _roteadorAtivo = true;
 
     private Canal _canal;
+    private List<IPEndPoint> vizinhos = new List<IPEndPoint>();
 
     private int[,] _matrizAdjacencia;
 
@@ -21,12 +24,16 @@ public class Roteador
     private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
     private Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
     private ElapsedEventHandler _evento;
-    
-    public Roteador(int id, int[] vetorDistancias)
+    private bool _distanciaAtualizada = false;
+
+    public Roteador(int id, int[] vetorDistancias, bool principal)
     {
-        this.Id = id;
+        Id = id;
+        Principal = principal;
 
         _canal = new Canal(OffsetPorta + id);
+
+        MapearVizinhos(vetorDistancias);
 
         InicializarMatriz(vetorDistancias);
 
@@ -34,6 +41,19 @@ public class Roteador
 
         _temporizadorRecebimento.Elapsed += _evento;
         _temporizadorRecebimento.AutoReset = true;
+    }
+
+    private void MapearVizinhos(int[] vetorDistancias)
+    {
+        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+
+        for (int i = 0; vetorDistancias.Length > 0; i++)
+        {
+            if (i != Id && vetorDistancias[i] != Infinito)
+            {
+                vizinhos.Add(new IPEndPoint(ipAddress, OffsetPorta + i));
+            }
+        }
     }
 
     private void InicializarMatriz(int[] vetorDistancias)
@@ -58,6 +78,8 @@ public class Roteador
 
     public void ProcessarTabelaRoteamento()
     {
+        EnviarDatagramaInfo();
+
         while (_roteadorAtivo)
         {
             _temporizadorRecebimento.Start();
@@ -75,29 +97,47 @@ public class Roteador
 
     private void AtualizarMatrizAdjacencias(DatagramaInfo datagramaInfo)
     {
-        for (int i = 0; i < datagramaInfo.VetorDistancias.Length; i++)
-        {
-            _matrizAdjacencia[datagramaInfo.Origem, i] = datagramaInfo.VetorDistancias[i];
-        }
+        int n = datagramaInfo.VetorDistancias.Length;
 
-        int n = _matrizAdjacencia.GetLength(dimension: 0); // Número de roteadores na rede
-
-        
-
-        // Para cada roteador na rede
         for (int i = 0; i < n; i++)
         {
-            // Para cada destino
-            for (int j = 0; j < n; j++)
+            _matrizAdjacencia[datagramaInfo.OrigemId, i] = datagramaInfo.VetorDistancias[i];
+
+            int distanciaAntiga = _matrizAdjacencia[Id, i];
+            int distanciaNova = datagramaInfo.VetorDistancias[i] + _matrizAdjacencia[datagramaInfo.OrigemId, i];
+
+            if (distanciaNova < distanciaAntiga)
             {
-                // Se o destino não for o mesmo roteador
-                if (i != j)
-                {
-                    // Atualiza a entrada na matriz de adjacências
-                    matrizAdjacencias[i, j] = Math.Min(matrizAdjacencias[i, j], vetorDistancias[i] + matrizAdjacencias[i, j]);
-                }
+                _matrizAdjacencia[Id, i] = distanciaNova;
+                _distanciaAtualizada = true;
             }
         }
+
+        if (_distanciaAtualizada)
+        {
+            EnviarDatagramaInfo();
+
+            _distanciaAtualizada = false;
+        }
+    }
+
+    private void EnviarDatagramaInfo()
+    {
+        int[] vetorDistancias = GetLinha(_matrizAdjacencia, Id);
+
+        DatagramaInfo datagramaInfo = new DatagramaInfo(Id, vetorDistancias);
+
+        foreach (IPEndPoint vizinho in vizinhos)
+        {
+            _canal.EnviarDatagramaInfo(datagramaInfo, vizinho);
+        }
+    }
+
+    public static int[] GetLinha(int[,] matrix, int linha)
+    {
+        return Enumerable.Range(start: 0, matrix.GetLength(dimension: 1))
+                         .Select(x => matrix[linha, x])
+                         .ToArray();
     }
 
     private void TemporizadorEncerrado(object? sender, ElapsedEventArgs e)
