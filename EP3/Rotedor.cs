@@ -1,155 +1,118 @@
-﻿using System.Net;
-using System.Net.Sockets;
-using System.Text;
+﻿using System.Timers;
+using Timer = System.Timers.Timer;
+
 
 namespace EP3;
 
 public class Roteador
 {
-    public int id { get; private set; }
-    private int[,] matrizAdjacencia;
-    private int[] vetorDistancias;
-    private UdpClient udpClient;
-    private const int PORT_OFFSET = 10000;
-    private const int INFINITO = int.MaxValue;
+    public int Id { get; private set; }
 
-    public Roteador(int id)
+    private bool _roteadorAtivo = true;
+
+    private Canal _canal;
+
+    private int[,] _matrizAdjacencia;
+
+    private const int OffsetPorta = 10000;
+    private const int Infinito = int.MaxValue;
+
+    private const int _timeoutMilissegundos = 30000;
+    private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
+    private Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
+    private ElapsedEventHandler _evento;
+    
+    public Roteador(int id, int[] vetorDistancias)
     {
-        this.id = id;
+        this.Id = id;
+
+        _canal = new Canal(OffsetPorta + id);
+
+        InicializarMatriz(vetorDistancias);
+
+        _evento = new ElapsedEventHandler(TemporizadorEncerrado);
+
+        _temporizadorRecebimento.Elapsed += _evento;
+        _temporizadorRecebimento.AutoReset = true;
     }
 
-    public void Inicializar()
+    private void InicializarMatriz(int[] vetorDistancias)
     {
-        LerMatrizAdjacencia();
+        _matrizAdjacencia = new int[vetorDistancias.Length, vetorDistancias.Length];
 
-        udpClient = new UdpClient(id + PORT_OFFSET);
-        Thread thread = new Thread(ReceberMensagens);
-        thread.Start();
-
-        EnviarMensagens();
-    }
-
-    private void LerMatrizAdjacencia()
-    {
-        string[] linhas = File.ReadAllLines("matriz_adjacencia.txt");
-        int tamanho = linhas.Length;
-        matrizAdjacencia = new int[tamanho, tamanho];
-        vetorDistancias = new int[tamanho];
-
-        for (int i = 0; i < tamanho; i++)
-        {
-            string[] valores = linhas[i].Split(' ');
-            for (int j = 0; j < tamanho; j++)
-            {
-                matrizAdjacencia[i, j] = int.Parse(valores[j]);
-            }
-        }
-    }
-
-    private void EnviarMensagens()
-    {
-        while (true)
-        {
-            for (int i = 0; i < matrizAdjacencia.GetLength(0); i++)
-            {
-                if (matrizAdjacencia[id, i] > 0 && matrizAdjacencia[id, i] != INFINITO)
-                {
-                    DatagramaInfo datagrama = new DatagramaInfo(id, i, vetorDistancias);
-                    EnviarDatagrama(datagrama);
-                }
-            }
-            Thread.Sleep(5000); // Envia a cada 5 segundos
-        }
-    }
-
-    private void EnviarDatagrama(DatagramaInfo datagrama)
-    {
-        byte[] bytes = SerializarDatagrama(datagrama);
-        udpClient.Send(bytes, bytes.Length, "127.0.0.1", datagrama.Destino + PORT_OFFSET);
-        Console.WriteLine($"Datagrama enviado de {datagrama.Origem} para {datagrama.Destino}: {string.Join(", ", datagrama.VetorDistancias)}");
-    }
-
-    private void ReceberMensagens()
-    {
-        IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-        while (true)
-        {
-            byte[] bytes = udpClient.Receive(ref remoteEndPoint);
-            DatagramaInfo datagrama = DeserializarDatagrama(bytes);
-            AtualizarTabelaRoteamento(datagrama);
-        }
-    }
-
-    private byte[] SerializarDatagrama(DatagramaInfo datagrama)
-    {
-        string data = $"{datagrama.Origem},{datagrama.Destino},{string.Join(",", datagrama.VetorDistancias)}";
-        return Encoding.ASCII.GetBytes(data);
-    }
-
-    private DatagramaInfo DeserializarDatagrama(byte[] bytes)
-    {
-        string data = Encoding.ASCII.GetString(bytes);
-        string[] partes = data.Split(',');
-        int origem = int.Parse(partes[0]);
-        int destino = int.Parse(partes[1]);
-        int[] vetorDistancias = Array.ConvertAll(partes[2].Split(','), int.Parse);
-        return new DatagramaInfo(origem, destino, vetorDistancias);
-    }
-
-    private void AtualizarTabelaRoteamento(DatagramaInfo datagrama)
-    {
-        bool atualizou = false;
-        for (int i = 0; i < datagrama.VetorDistancias.Length; i++)
-        {
-            int novaDistancia = datagrama.VetorDistancias[datagrama.Origem] + datagrama.VetorDistancias[i];
-            if (novaDistancia < vetorDistancias[i])
-            {
-                vetorDistancias[i] = novaDistancia;
-                atualizou = true;
-            }
-        }
-
-        if (atualizou)
-        {
-            Console.WriteLine($"Tabela de roteamento atualizada pelo roteador {datagrama.Origem}.");
-            ImprimirTabelaRoteamento();
-        }
-    }
-
-    private void ImprimirTabelaRoteamento()
-    {
-        Console.WriteLine($"Tabela de roteamento do roteador {id}:");
         for (int i = 0; i < vetorDistancias.Length; i++)
         {
-            Console.WriteLine($"Para o roteador {i}: Distância = {vetorDistancias[i]}");
+            for (int j = 0; j < vetorDistancias.Length; j++)
+            {
+                if (i == Id)
+                {
+                    _matrizAdjacencia[i, j] = vetorDistancias[j];
+                }
+                else
+                {
+                    _matrizAdjacencia[i, j] = Infinito;
+                }
+            }
         }
     }
 
-    public void Finalizar()
+    public void ProcessarTabelaRoteamento()
     {
-        Console.WriteLine($"O roteador {id} finalizou o processo.");
-    }
-
-    public void AlterarLink(int origem, int destino, int novoPeso)
-    {
-        matrizAdjacencia[origem, destino] = novoPeso;
-        vetorDistancias[destino] = novoPeso;
-        EnviarMensagens();
-    }
-
-    public void RemoverRoteador(int idRoteador)
-    {
-        for (int i = 0; i < matrizAdjacencia.GetLength(0); i++)
+        while (_roteadorAtivo)
         {
-            matrizAdjacencia[idRoteador, i] = INFINITO;
-            matrizAdjacencia[i, idRoteador] = INFINITO;
+            _temporizadorRecebimento.Start();
+
+            DatagramaInfo? datagramaInfoRecebido = _canal.ReceberDatagramaInfo(_tockenCancelamentoRecebimento.Token);
+
+            _temporizadorRecebimento.Stop();
+
+            if (datagramaInfoRecebido != null)
+            {
+                AtualizarMatrizAdjacencias(datagramaInfoRecebido);
+            }
         }
-        vetorDistancias[idRoteador] = INFINITO;
-        EnviarMensagens();
     }
 
-    public int[] ObterVetorDistancias()
+    private void AtualizarMatrizAdjacencias(DatagramaInfo datagramaInfo)
     {
-        return vetorDistancias;
+        for (int i = 0; i < datagramaInfo.VetorDistancias.Length; i++)
+        {
+            _matrizAdjacencia[datagramaInfo.Origem, i] = datagramaInfo.VetorDistancias[i];
+        }
+
+        int n = _matrizAdjacencia.GetLength(dimension: 0); // Número de roteadores na rede
+
+        
+
+        // Para cada roteador na rede
+        for (int i = 0; i < n; i++)
+        {
+            // Para cada destino
+            for (int j = 0; j < n; j++)
+            {
+                // Se o destino não for o mesmo roteador
+                if (i != j)
+                {
+                    // Atualiza a entrada na matriz de adjacências
+                    matrizAdjacencias[i, j] = Math.Min(matrizAdjacencias[i, j], vetorDistancias[i] + matrizAdjacencias[i, j]);
+                }
+            }
+        }
+    }
+
+    private void TemporizadorEncerrado(object? sender, ElapsedEventArgs e)
+    {
+        _temporizadorRecebimento.Stop();
+        _roteadorAtivo = false;
+        _tockenCancelamentoRecebimento.Cancel();
+    }
+
+    public void Fechar()
+    {
+        _tockenCancelamentoRecebimento.Dispose();
+
+        _temporizadorRecebimento.Dispose();
+
+        _canal.Fechar();
     }
 }

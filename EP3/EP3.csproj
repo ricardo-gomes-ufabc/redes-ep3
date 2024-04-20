@@ -8,6 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="matriz.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

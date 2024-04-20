@@ -1,10 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Timers;
-using Timer = System.Timers.Timer;
 
 
 namespace EP3;
@@ -17,8 +14,8 @@ public class Canal
     #region Socket
 
     private IPEndPoint _pontoConexaoLocal;
-    private IPEndPoint? _pontoConexaoRemoto;
-    public readonly UdpClient _socket = new UdpClient();
+
+    private readonly UdpClient _socket = new UdpClient();
 
     #endregion
 
@@ -46,16 +43,11 @@ public class Canal
 
     #region Criação Canal
 
-    public Canal(IPEndPoint pontoConexaoLocal, IPEndPoint pontoConexaoRemoto) : this(pontoConexaoLocal)
-    {
-        _pontoConexaoRemoto = pontoConexaoRemoto;
-    }
-
-    public Canal(IPEndPoint pontoConexaoLocal)
+    public Canal(int porta)
     {
         CarregarConfigs();
 
-        _pontoConexaoLocal = pontoConexaoLocal;
+        _pontoConexaoLocal = new IPEndPoint(IPAddress.Any, porta); ;
 
         _socket.Client.Bind(_pontoConexaoLocal);
     }
@@ -96,7 +88,7 @@ public class Canal
         return JsonSerializer.Deserialize<DatagramaInfo>(Encoding.UTF8.GetString(byteArray));
     }
 
-    public void EnviarDatagramaInfo(byte[]? bytesDatagramaInfo)
+    public void EnviarDatagramaInfo(DatagramaInfo datagramaInfo, IPEndPoint pontoConexaoRemoto)
     {
         try
         {
@@ -105,42 +97,30 @@ public class Canal
                 _totalMensagensEnviadas++;
             }
 
+            byte[]? bytesDatagramaInfo = SegmentoConfiavelParaByteArray(datagramaInfo);
+
             if (bytesDatagramaInfo != null)
             {
-                _socket.SendAsync(bytesDatagramaInfo, _pontoConexaoRemoto);
+                _socket.SendAsync(bytesDatagramaInfo, pontoConexaoRemoto);
             }
         }
         catch { }
     }
 
-    public DatagramaInfo? ReceberSegmento(CancellationToken tokenCancelamento)
+    public DatagramaInfo? ReceberDatagramaInfo(CancellationToken tokenCancelamento)
     {
         try
         {
             ValueTask<UdpReceiveResult> taskRecebimento = _socket.ReceiveAsync(tokenCancelamento);
 
-            byte[] segmentoRecebido = taskRecebimento.Result.Buffer;
+            byte[] bytesDatagramaInfoRecebido = taskRecebimento.Result.Buffer;
 
             lock (_trava)
             {
                 _totalMensagensRecebidas++;
             }
 
-            _pontoConexaoRemoto ??= taskRecebimento.Result.RemoteEndPoint;
-
-            SegmentoConfiavel? segmentoConfiavelRecebido = ByteArrayParaSegmentoConfiavel(segmentoRecebido);
-
-            byte[]? checkSumRecebimento = GerarCheckSum(segmentoConfiavelRecebido);
-
-            if (!checkSumRecebimento.SequenceEqual(segmentoConfiavelRecebido.CheckSum))
-            {
-                Console.WriteLine("Mensagem corrompida recebida descartada, checksum diferente");
-
-                return null;
-            }
-
-            return segmentoConfiavelRecebido;
-
+            return ByteArrayParaSegmentoConfiavel(bytesDatagramaInfoRecebido);
         }
         catch (JsonException)
         {
@@ -158,107 +138,53 @@ public class Canal
 
     #region Aplicação de Propiedades
 
-    public void ProcessarMensagem(SegmentoConfiavel segmentoConfiavel)
+    public void ProcessarMensagem(DatagramaInfo datagramaInfo)
     {
-        uint id = segmentoConfiavel.Ack ? segmentoConfiavel.NumAck : segmentoConfiavel.NumSeq;
-        string tipoMensagem = "";
-
-        if (segmentoConfiavel is { Syn: true, Ack: false })
-        {
-            tipoMensagem = "SYN";
-        }
-        else if (segmentoConfiavel is { Ack: true, Syn: false })
-        {
-            tipoMensagem = "ACK";
-        }
-        else if (segmentoConfiavel.Push)
-        {
-            tipoMensagem = "PUSH";
-        }
-        else if (segmentoConfiavel.Fin)
-        {
-            tipoMensagem = "FIN";
-        }
-        else
-        {
-            tipoMensagem = "SYNACK";
-        }
-
         if (DeveriaAplicarPropriedade(_probabilidadeEliminacao))
         {
             _totalMensagensEliminadas++;
 
-            EnviarDatagramaInfo(null);
+            //EnviarDatagramaInfo(null);
 
-            Console.WriteLine($"Mensagem {tipoMensagem} id {id} eliminada.");
+            Console.WriteLine($"Mensagem eliminada.");
 
             return;
         }
-
-        segmentoConfiavel.SetCheckSum(GerarCheckSum(segmentoConfiavel));
 
         if (DeveriaAplicarPropriedade(_probabilidadeDuplicacao))
         {
             _totalMensagensDuplicadas++;
 
-            byte[] bytesSegmentoDuplicado = SegmentoConfiavelParaByteArray(segmentoConfiavel);
+            //EnviarDatagramaInfo(datagramaInfo);
 
-            EnviarDatagramaInfo(bytesSegmentoDuplicado);
-
-            Console.WriteLine($"Mensagem {tipoMensagem} id {id} duplicada.");
+            Console.WriteLine($"Mensagem duplicada.");
         }
 
 
-        byte[] bytesSegmento = SegmentoConfiavelParaByteArray(segmentoConfiavel);
+        byte[] bytesSegmento = SegmentoConfiavelParaByteArray(datagramaInfo);
 
         if (DeveriaAplicarPropriedade(_probabilidadeCorrupcao))
         {
             CorromperSegmento(ref bytesSegmento);
             _totalMensagensCorrompidas++;
-            Console.WriteLine($"Mensagem {tipoMensagem} id {id} corrompida.");
+            Console.WriteLine($"Mensagem corrompida.");
         }
 
         if (bytesSegmento.Length > _tamanhoMaximoBytes)
         {
             CortarSegmento(ref bytesSegmento);
             _totalMensagensCortadas++;
-            Console.WriteLine($"Mensagem {tipoMensagem} id {id} cortada.");
+            Console.WriteLine($"Mensagem cortada.");
         }
 
         if (_delayMilissegundos != 0)
         {
             Thread.Sleep(_delayMilissegundos);
             _totalMensagensAtrasadas++;
-            Console.WriteLine($"Mensagem {tipoMensagem} id {id} atrasada.");
+            Console.WriteLine($"Mensagem atrasada.");
         }
 
-        EnviarDatagramaInfo(bytesSegmento);
-    }
-
-    private byte[] GerarCheckSum(SegmentoConfiavel segmentoConfiavel)
-    {
-        var conteudoSegmento = new
-        {
-            Syn = segmentoConfiavel.Syn,
-            Ack = segmentoConfiavel.Ack,
-            Push = segmentoConfiavel.Push,
-            Fin = segmentoConfiavel.Fin,
-            NumSeq = segmentoConfiavel.NumSeq,
-            NumAck = segmentoConfiavel.NumAck,
-            Data = segmentoConfiavel.Data,
-        };
-
-        string jsonConteudo = JsonSerializer.Serialize(conteudoSegmento);
-
-        return GetHash(jsonConteudo);
-    }
-
-    public static byte[] GetHash(string inputString)
-    {
-        using (HashAlgorithm algorithm = SHA256.Create())
-        {
-            return algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
-        }
+        //EnviarDatagramaInfo(datagramaInfo);
     }
 
     private bool DeveriaAplicarPropriedade(int probabilidade)
@@ -308,81 +234,81 @@ public class Canal
 
 #region Classe Threads
 
-public class Threads
-{
-    private Canal _canal;
+//public class Threads
+//{
+//    private Canal _canal;
 
-    private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
+//    private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
 
-    private static int _timeoutMilissegundos = 500;
-    private static Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
+//    private static int _timeoutMilissegundos = 500;
+//    private static Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
 
-    public Threads(IPEndPoint pontoConexaoLocal, IPEndPoint pontoConexaoRemoto)
-    {
-        _canal = new Canal(pontoConexaoLocal, pontoConexaoRemoto);
-    }
+//    public Threads(IPEndPoint pontoConexaoLocal, IPEndPoint pontoConexaoRemoto)
+//    {
+//        _canal = new Canal(pontoConexaoLocal, pontoConexaoRemoto);
+//    }
 
-    public Threads(IPEndPoint pontoConexaoLocal)
-    {
-        _canal = new Canal(pontoConexaoLocal);
-    }
+//    public Threads(IPEndPoint pontoConexaoLocal)
+//    {
+//        _canal = new Canal(pontoConexaoLocal);
+//    }
 
-    #region Envio e Recebimento
+//    #region Envio e Recebimento
 
-    public void EnviarSegmento(SegmentoConfiavel segmento)
-    {
-        _canal.ProcessarMensagem(segmento);
-    }
+//    public void EnviarSegmento(SegmentoConfiavel segmento)
+//    {
+//        _canal.ProcessarMensagem(segmento);
+//    }
 
-    public SegmentoConfiavel? ReceberSegmento()
-    {
-        SegmentoConfiavel? segmentoRecebido;
+//    public SegmentoConfiavel? ReceberSegmento()
+//    {
+//        SegmentoConfiavel? segmentoRecebido;
 
-        segmentoRecebido = _canal.ReceberSegmento(_tockenCancelamentoRecebimento.Token);
+//        segmentoRecebido = _canal.ReceberSegmento(_tockenCancelamentoRecebimento.Token);
 
-        if (_tockenCancelamentoRecebimento.Token.IsCancellationRequested)
-        {
-            _tockenCancelamentoRecebimento = new CancellationTokenSource();
-        }
+//        if (_tockenCancelamentoRecebimento.Token.IsCancellationRequested)
+//        {
+//            _tockenCancelamentoRecebimento = new CancellationTokenSource();
+//        }
 
-        return segmentoRecebido;
-    }
+//        return segmentoRecebido;
+//    }
 
-    public void CancelarRecebimento()
-    {
-        _tockenCancelamentoRecebimento.Cancel();
-    }
+//    public void CancelarRecebimento()
+//    {
+//        _tockenCancelamentoRecebimento.Cancel();
+//    }
 
-    #endregion
+//    #endregion
 
-    #region Timeout
+//    #region Timeout
 
-    public void ConfigurarTemporizador(ElapsedEventHandler evento)
-    {
-        _temporizadorRecebimento.Elapsed += evento;
-        _temporizadorRecebimento.AutoReset = true;
-    }
+//    public void ConfigurarTemporizador(ElapsedEventHandler evento)
+//    {
+//        _temporizadorRecebimento.Elapsed += evento;
+//        _temporizadorRecebimento.AutoReset = true;
+//    }
 
-    public void IniciarTemporizador()
-    {
-        _temporizadorRecebimento.Enabled = true;
-    }
+//    public void IniciarTemporizador()
+//    {
+//        _temporizadorRecebimento.Enabled = true;
+//    }
 
-    public void PararTemporizador()
-    {
-        _temporizadorRecebimento.Stop();
-    }
+//    public void PararTemporizador()
+//    {
+//        _temporizadorRecebimento.Stop();
+//    }
 
-    public void Fechar()
-    {
-        _tockenCancelamentoRecebimento.Dispose();
+//    public void Fechar()
+//    {
+//        _tockenCancelamentoRecebimento.Dispose();
 
-        _temporizadorRecebimento.Dispose();
+//        _temporizadorRecebimento.Dispose();
 
-        _canal.Fechar();
-    }
+//        _canal.Fechar();
+//    }
 
-    #endregion
-}
+//    #endregion
+//}
 
 #endregion

@@ -1,73 +1,28 @@
-﻿using System.Diagnostics;
-
-namespace EP3;
+﻿namespace EP3;
 
 public class Principal
 {
+    //private static List<Roteador> roteadores = new List<Roteador>();
+    private static List<Threads> roteadores = new List<Threads>();
+
+    private static readonly Random _aleatorio = new Random();
+
     public static void Main(string[] args)
     {
-        string caminhoArquivo
+        string caminhoArquivo = $"{AppContext.BaseDirectory}/matriz.txt";
 
-        int numeroRoteadores = 5;
-        int[] iteracoes = new int[numeroRoteadores];
-        int[] datagramasEnviados = new int[numeroRoteadores];
+        int[,] matriz = CarregarMatriz(caminhoArquivo);
 
-        for (int i = 1; i <= numeroRoteadores; i++)
+        for (int i = 0; i < matriz.GetLength(0); i++)
         {
-            Roteador roteador = new Roteador(i);
-            roteador.Inicializar();
+            //roteadores.Add(new Roteador(i, GetLinha(matriz, i)));
+            roteadores.Add(new Threads(i, GetLinha(matriz, i)));
         }
 
-        Stopwatch stopwatch = new Stopwatch();
-        stopwatch.Start();
+        int idRoteadorSelecionado = 0;
+        //int idRoteadorSelecionado = _aleatorio.Next(minValue: 0, maxValue: matriz.GetLength(dimension: 0));
 
-        // Teste para uma comunicação/roteador sem perdas
-        // Não é necessário implementar, pois a comunicação ocorre normalmente
 
-        // Teste para uma comunicação com perdas
-        // Não é necessário implementar, pois a comunicação ocorre normalmente
-
-        // Teste para um link que teve seu valor modificado
-        Roteador roteador1 = ObterRoteadorPorId(1);
-        roteador1.AlterarLink(1, 2, 10); // Alterando o peso do link entre roteador 1 e 2 para 10
-
-        // Teste para um roteador que não envia nem recebe mais datagramas
-        Roteador roteador2 = ObterRoteadorPorId(2);
-        roteador2.RemoverRoteador(2); // Removendo o roteador 2
-
-        stopwatch.Stop();
-
-        // Calculando média da quantidade de iterações até chegar à finalização
-        double mediaIteracoes = 0;
-        foreach (int iteracao in iteracoes)
-        {
-            mediaIteracoes += iteracao;
-        }
-        mediaIteracoes /= iteracoes.Length;
-
-        // Calculando média da quantidade de datagramas enviados
-        double mediaDatagramas = 0;
-        foreach (int datagramas in datagramasEnviados)
-        {
-            mediaDatagramas += datagramas;
-        }
-        mediaDatagramas /= datagramasEnviados.Length;
-
-        Console.WriteLine($"Média da quantidade de iterações: {mediaIteracoes}");
-        Console.WriteLine($"Média da quantidade de datagramas enviados: {mediaDatagramas}");
-        Console.WriteLine($"Tempo total: {stopwatch.Elapsed}");
-    }
-
-    public static Roteador ObterRoteadorPorId(int id, List<Roteador> roteadores)
-    {
-        foreach (var roteador in roteadores)
-        {
-            if (roteador.id == id)
-            {
-                return roteador;
-            }
-        }
-        return null;
     }
 
     private static int[,] CarregarMatriz(string filePath)
@@ -96,5 +51,12 @@ public class Principal
         }
 
         return matriz;
+    }
+
+    public static int[] GetLinha(int[,] matrix, int linha)
+    {
+        return Enumerable.Range(start: 0, matrix.GetLength(dimension: 1))
+                         .Select(x => matrix[linha, x])
+                         .ToArray();
     }
 }
