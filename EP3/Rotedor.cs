@@ -130,7 +130,7 @@ public class Roteador
 
         foreach (IPEndPoint vizinho in vizinhos)
         {
-            _canal.EnviarDatagramaInfo(datagramaInfo, vizinho);
+            _canal.ProcessarMensagem(datagramaInfo, vizinho);
         }
     }
 
