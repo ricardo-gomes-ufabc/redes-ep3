@@ -6,6 +6,8 @@ public class Principal
 {
     public static void Main(string[] args)
     {
+        string caminhoArquivo
+
         int numeroRoteadores = 5;
         int[] iteracoes = new int[numeroRoteadores];
         int[] datagramasEnviados = new int[numeroRoteadores];
@@ -72,25 +74,24 @@ public class Principal
     {
         int[,] matriz;
 
-        string[] lines = File.ReadAllLines(filePath);
+        string[] linhas = File.ReadAllLines(filePath);
 
-        string[] firstLineElements = lines[0].Split(',');
-        int numRows = lines.Length;
-        int numCols = firstLineElements.Length;
+        int numeroLinhas = linhas.Length;
 
-        if (numRows != numCols)
+        matriz = new int[numeroLinhas, numeroLinhas];
+
+        for (int i = 0; i < numeroLinhas; i++)
         {
-            throw new Exception("Matriz não é quadrada. Valores para certos links entre roteadores faltando. Por favor, checar arquivo de texto");
-        }
+            string[] linha = linhas[i].Split(separator: ", ");
 
-        matriz = new int[numRows, numCols];
-
-        for (int i = 0; i < numRows; i++)
-        {
-            string[] elements = lines[i].Split(' ');
-            for (int j = 0; j < numCols; j++)
+            if (numeroLinhas != linha.Length)
             {
-                matriz[i, j] = int.Parse(elements[j]);
+                throw new Exception(message: "Matriz não é quadrada. Valores para certos links entre roteadores faltando. Por favor, checar arquivo de texto");
+            }
+
+            for (int j = 0; j < linha.Length; j++)
+            {
+                matriz[i, j] = int.Parse(linha[j]);
             }
         }
 
