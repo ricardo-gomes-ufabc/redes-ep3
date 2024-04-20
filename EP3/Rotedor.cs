@@ -48,7 +48,7 @@ public class Roteador
     {
         IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
 
-        for (int i = 0; vetorDistancias.Length > 0; i++)
+        for (int i = 0; i < vetorDistancias.Length; i++)
         {
             if (i != Id && vetorDistancias[i] != Infinito)
             {
@@ -103,15 +103,35 @@ public class Roteador
         for (int i = 0; i < n; i++)
         {
             _matrizAdjacencia[datagramaInfo.OrigemId, i] = datagramaInfo.VetorDistancias[i];
+        }
 
-            int distanciaAntiga = _matrizAdjacencia[Id, i];
-            int distanciaNova = datagramaInfo.VetorDistancias[i] + _matrizAdjacencia[datagramaInfo.OrigemId, i];
+        //Arrumar lógica de cálculo de distância nova minima;
+
+        for (int i = 0; i < n; i++)
+        {
+            int distanciaAntiga = _matrizAdjacencia[Id, datagramaInfo.OrigemId];
+
+            int distanciaNova;
+
+            int custoAoVizinho;
+            int distânciaVizinhoOrigem;
+
+            if (_matrizAdjacencia[datagramaInfo.OrigemId, i] == Infinito)
+            {
+                distanciaNova = Infinito;
+            }
+            else
+            {
+                distanciaNova = datagramaInfo.VetorDistancias[i] + _matrizAdjacencia[datagramaInfo.OrigemId, i];
+            }
 
             if (distanciaNova < distanciaAntiga)
             {
                 _matrizAdjacencia[Id, i] = distanciaNova;
                 _distanciaAtualizada = true;
             }
+
+            
         }
 
         if (_distanciaAtualizada)
@@ -137,8 +157,8 @@ public class Roteador
     public static int[] GetLinha(int[,] matrix, int linha)
     {
         return Enumerable.Range(start: 0, matrix.GetLength(dimension: 1))
-                         .Select(x => matrix[linha, x])
-                         .ToArray();
+                                                .Select(x => matrix[linha, x])
+                                                .ToArray();
     }
 
     private void TemporizadorEncerrado(object? sender, ElapsedEventArgs e)

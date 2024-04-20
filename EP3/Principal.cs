@@ -24,11 +24,13 @@ public class Principal
         {
             Thread thread;
 
+            int indice = i;
+
             if (i != idRoteadorSelecionado)
             {
                 thread = new Thread(() =>
                 {
-                    Roteador roteador = new Roteador(i, Roteador.GetLinha(matriz, i), false);
+                    Roteador roteador = new Roteador(indice, Roteador.GetLinha(matriz, indice), principal: false);
 
                     roteador.ProcessarTabelaRoteamento();
                 });
@@ -37,7 +39,7 @@ public class Principal
             {
                 thread = new Thread(() =>
                 {
-                    Roteador roteador = new Roteador(i, Roteador.GetLinha(matriz, i), false);
+                    Roteador roteador = new Roteador(indice, Roteador.GetLinha(matriz, indice), principal: true);
 
                     roteador.ProcessarTabelaRoteamento();
                 });
