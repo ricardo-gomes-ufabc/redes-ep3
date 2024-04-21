@@ -193,7 +193,14 @@ public class Roteador
 
                     if (Principal)
                     {
-                        Console.WriteLine($"Nova rota de menor custo encontrada entre Roteador {Id} e {datagramaInfo.OrigemId}: {distanciaAntiga} -> {distanciaNova}\n");
+                        if (distanciaAntiga == Infinito)
+                        {
+                            Console.WriteLine($"Nova rota de menor custo encontrada entre Roteador {Id} e {datagramaInfo.OrigemId}: Infinito -> {distanciaNova}\n");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Nova rota de menor custo encontrada entre Roteador {Id} e {datagramaInfo.OrigemId}: {distanciaAntiga} -> {distanciaNova}\n");
+                        }
                     }
                 }
             }
