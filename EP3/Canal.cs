@@ -226,7 +226,7 @@ public class Canal
                                  $"\nTotal de mensagens atrasadas: {_totalMensagensAtrasadas}" +
                                  $"\nTotal de mensagens duplicadas: {_totalMensagensDuplicadas}" +
                                  $"\nTotal de mensagens corrompidas: {_totalMensagensCorrompidas}" +
-                                 $"\nTotal de mensagens cortadas: {_totalMensagensCortadas}");
+                                 $"\nTotal de mensagens cortadas: {_totalMensagensCortadas}\n");
     }
 
     #endregion

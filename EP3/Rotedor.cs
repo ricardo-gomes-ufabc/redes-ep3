@@ -65,13 +65,13 @@ public class Roteador
         {
             for (int j = 0; j < vetorDistancias.Length; j++)
             {
-                if (i == Id)
+                if (i != Id || (i != j && vetorDistancias[j] == 0))
                 {
-                    _matrizAdjacencia[i, j] = vetorDistancias[j];
+                    _matrizAdjacencia[i, j] = Infinito;
                 }
                 else
                 {
-                    _matrizAdjacencia[i, j] = Infinito;
+                    _matrizAdjacencia[i, j] = vetorDistancias[j];
                 }
             }
         }
@@ -113,12 +113,29 @@ public class Roteador
 
         for (int i = 0; i < tamanhoVetor - 1; i++)
         {
-            valoresVetor += $"{datagramaInfoRecebido.VetorDistancias[i]}, ";
+            if (datagramaInfoRecebido.VetorDistancias[i] == Infinito)
+            {
+                valoresVetor += "Infinito, ";
+
+            }
+            else
+            {
+                valoresVetor += $"{datagramaInfoRecebido.VetorDistancias[i]}, ";
+            }
+            
         }
 
-        valoresVetor += $"{datagramaInfoRecebido.VetorDistancias[tamanhoVetor - 1]}";
+        if (datagramaInfoRecebido.VetorDistancias[tamanhoVetor - 1] == Infinito)
+        {
+            valoresVetor += "Infinito";
 
-        Console.WriteLine($"DatagramaInfo enviado pelo Roteador {datagramaInfoRecebido.OrigemId}");
+        }
+        else
+        {
+            valoresVetor += $"{datagramaInfoRecebido.VetorDistancias[tamanhoVetor - 1]}";
+        }
+
+        Console.WriteLine($"DatagramaInfo enviado pelo Roteador {datagramaInfoRecebido.OrigemId}:");
         Console.WriteLine($"{valoresVetor}\n");
     }
 
@@ -229,10 +246,19 @@ public class Roteador
         {
             for (int j = 0; j < n; j++)
             {
-                Console.Write($"{_matrizAdjacencia[i, j]}, ");
+                if (_matrizAdjacencia[i, j] == Infinito)
+                {
+                    Console.Write("Infinito, ");
+                }
+                else
+                {
+                    Console.Write($"{_matrizAdjacencia[i, j]}, ");
+                }
             }
 
             Console.WriteLine();
         }
+
+        
     }
 }
