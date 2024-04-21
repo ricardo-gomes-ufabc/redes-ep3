@@ -207,10 +207,7 @@ public class Canal
 
     public void Fechar(bool principal)
     {
-        if (principal)
-        {
-            ConsolidarResultados();
-        }
+        ConsolidarResultados();
 
         _socket.Close();
 

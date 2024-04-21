@@ -224,16 +224,16 @@ public class Roteador
 
     public void Fechar(object locker)
     {
-        if (Principal)
+        lock (locker)
         {
             ImprimirTabela();
+
+            _tockenCancelamentoRecebimento.Dispose();
+
+            _temporizadorRecebimento.Dispose();
+
+            _canal.Fechar(Principal);
         }
-
-        _tockenCancelamentoRecebimento.Dispose();
-
-        _temporizadorRecebimento.Dispose();
-
-        _canal.Fechar(Principal);
     }
 
     public void ImprimirTabela()
