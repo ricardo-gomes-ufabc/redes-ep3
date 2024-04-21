@@ -11,8 +11,6 @@ public class Principal
 
     private static readonly Random _aleatorio = new Random();
 
-    private static object _locker = new object();
-
     public static void Main(string[] args)
     {
         Console.WriteLine("Programa Iniciado.\n");
@@ -40,7 +38,7 @@ public class Principal
 
                     roteador.ProcessarTabelaRoteamento();
 
-                    roteador.Fechar(_locker);
+                    roteador.Fechar();
 
                     return (roteador.Iterações, roteador.DatagramasEnviados);
                 });
@@ -53,7 +51,7 @@ public class Principal
 
                     roteador.ProcessarTabelaRoteamento();
 
-                    roteador.Fechar(_locker);
+                    roteador.Fechar();
 
                     return (roteador.Iterações, roteador.DatagramasEnviados);
                 });

@@ -8,6 +8,8 @@ namespace EP3;
 
 public class Canal
 {
+    public bool Principal { get; }
+
     private readonly Random _aleatorio = new Random();
     private readonly object _trava = new object();
 
@@ -43,8 +45,10 @@ public class Canal
 
     #region Criação Canal
 
-    public Canal(int porta)
+    public Canal(int porta, bool principal)
     {
+        Principal = principal;
+
         CarregarConfigs();
 
         _pontoConexaoLocal = new IPEndPoint(IPAddress.Any, porta); ;
@@ -122,7 +126,10 @@ public class Canal
         }
         catch (JsonException)
         {
-            Console.WriteLine("Mensagem corrompida recebida descartada");
+            if (Principal)
+            {
+                Console.WriteLine("Mensagem corrompida recebida descartada\n");
+            }
 
             return null;
         }
@@ -144,7 +151,10 @@ public class Canal
 
             EnviarDatagramaInfo(null, pontoConexaoRemoto);
 
-            Console.WriteLine($"Mensagem eliminada.\n");
+            if (Principal)
+            {
+                Console.WriteLine($"Mensagem eliminada.\n");
+            }
 
             return;
         }
@@ -157,28 +167,43 @@ public class Canal
 
             EnviarDatagramaInfo(bytesDatagramaInfo, pontoConexaoRemoto);
 
-            Console.WriteLine($"Mensagem duplicada.\n");
+            if (Principal)
+            {
+                Console.WriteLine($"Mensagem duplicada.\n");
+            }
         }
 
         if (DeveriaAplicarPropriedade(_probabilidadeCorrupcao))
         {
             CorromperSegmento(ref bytesDatagramaInfo);
             _totalMensagensCorrompidas++;
-            Console.WriteLine($"Mensagem corrompida.\n");
+
+            if (Principal)
+            {
+                Console.WriteLine($"Mensagem corrompida.\n");
+            }
         }
 
         if (bytesDatagramaInfo.Length > _tamanhoMaximoBytes)
         {
             CortarSegmento(ref bytesDatagramaInfo);
             _totalMensagensCortadas++;
-            Console.WriteLine($"Mensagem cortada.\n");
+
+            if (Principal)
+            {
+                Console.WriteLine($"Mensagem cortada.\n");
+            }
         }
 
         if (_delayMilissegundos != 0)
         {
             Thread.Sleep(_delayMilissegundos);
             _totalMensagensAtrasadas++;
-            Console.WriteLine($"Mensagem atrasada.\n");
+
+            if (Principal)
+            {
+                Console.WriteLine($"Mensagem atrasada.\n");
+            }
         }
 
         EnviarDatagramaInfo(bytesDatagramaInfo, pontoConexaoRemoto);
@@ -205,12 +230,9 @@ public class Canal
 
     #region Finalização
 
-    public void Fechar(bool principal)
+    public void Fechar()
     {
-        if (principal)
-        {
-            ConsolidarResultados();
-        }
+        ConsolidarResultados();
 
         _socket.Close();
 
@@ -219,14 +241,17 @@ public class Canal
 
     private void ConsolidarResultados()
     {
-        Console.WriteLine(value: $"\n" +
-                                 $"\nTotal de mensagens enviadas: {_totalMensagensEnviadas}" +
-                                 $"\nTotal de mensagens recebidas: {_totalMensagensRecebidas}" +
-                                 $"\nTotal de mensagens eliminadas: {_totalMensagensEliminadas}" +
-                                 $"\nTotal de mensagens atrasadas: {_totalMensagensAtrasadas}" +
-                                 $"\nTotal de mensagens duplicadas: {_totalMensagensDuplicadas}" +
-                                 $"\nTotal de mensagens corrompidas: {_totalMensagensCorrompidas}" +
-                                 $"\nTotal de mensagens cortadas: {_totalMensagensCortadas}\n");
+        if (Principal)
+        {
+            Console.WriteLine(value: $"\n" +
+                                     $"\nTotal de mensagens enviadas: {_totalMensagensEnviadas}" +
+                                     $"\nTotal de mensagens recebidas: {_totalMensagensRecebidas}" +
+                                     $"\nTotal de mensagens eliminadas: {_totalMensagensEliminadas}" +
+                                     $"\nTotal de mensagens atrasadas: {_totalMensagensAtrasadas}" +
+                                     $"\nTotal de mensagens duplicadas: {_totalMensagensDuplicadas}" +
+                                     $"\nTotal de mensagens corrompidas: {_totalMensagensCorrompidas}" +
+                                     $"\nTotal de mensagens cortadas: {_totalMensagensCortadas}\n");
+        }
     }
 
     #endregion

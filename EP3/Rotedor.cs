@@ -7,8 +7,8 @@ namespace EP3;
 
 public class Roteador
 {
-    public int Id { get; private set; }
-    public bool Principal { get; private set; }
+    public int Id { get; }
+    public bool Principal { get; }
 
     private bool _roteadorAtivo = true;
 
@@ -35,7 +35,7 @@ public class Roteador
         Id = id;
         Principal = principal;
 
-        _canal = new Canal(OffsetPorta + id);
+        _canal = new Canal(OffsetPorta + id, Principal);
 
         MapearVizinhos(vetorDistancias);
 
@@ -150,7 +150,7 @@ public class Roteador
 
         if (Principal)
         {
-            Console.WriteLine($"Vetor de distâncias do Roteador {datagramaInfo.OrigemId} atualizada");
+            Console.WriteLine($"Vetor de distâncias do Roteador {datagramaInfo.OrigemId} atualizada\n");
         }
 
         for (int i = 0; i < n; i++)
@@ -182,7 +182,7 @@ public class Roteador
 
                     if (Principal)
                     {
-                        Console.WriteLine($"Nova rota de menor custo encontrada entre Roteador {Id} e {datagramaInfo.OrigemId}: {distanciaAntiga} -> {distanciaNova}");
+                        Console.WriteLine($"Nova rota de menor custo encontrada entre Roteador {Id} e {datagramaInfo.OrigemId}: {distanciaAntiga} -> {distanciaNova}\n");
                     }
                 }
             }
@@ -195,11 +195,6 @@ public class Roteador
             _distanciaAtualizada = false;
 
             DatagramasEnviados++;
-        }
-
-        if (Principal)
-        {
-            Console.WriteLine();
         }
     }
 
@@ -229,7 +224,7 @@ public class Roteador
         _tockenCancelamentoRecebimento.Cancel();
     }
 
-    public void Fechar(object locker)
+    public void Fechar()
     {
         if (Principal)
         {
@@ -240,7 +235,7 @@ public class Roteador
 
         _temporizadorRecebimento.Dispose();
 
-        _canal.Fechar(Principal);
+        _canal.Fechar();
     }
 
     public void ImprimirTabela()
