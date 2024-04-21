@@ -22,10 +22,13 @@ public class Roteador
 
     private bool _distanciaAtualizada;
 
-    private const int _timeoutMilissegundos = 10000;
+    private const int _timeoutPropagarInfoMilissegundos = 5000;
+    private const int _timeoutRecebimentoMilissegundos = 15000;
     private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
-    private Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
-    private ElapsedEventHandler _evento;
+    private Timer _temporizadorPropagarInfo = new Timer(_timeoutPropagarInfoMilissegundos);
+    private Timer _temporizadorRecebimento = new Timer(_timeoutRecebimentoMilissegundos);
+    private ElapsedEventHandler _timeoutRecebimento;
+    private ElapsedEventHandler _timeoutPropagarInfo;
 
     public int Iterações;
     public int DatagramasEnviados;
@@ -41,9 +44,13 @@ public class Roteador
 
         InicializarMatriz(vetorDistancias);
 
-        _evento = new ElapsedEventHandler(TemporizadorEncerrado);
+        _timeoutRecebimento = new ElapsedEventHandler(TemporizadorRecebimentoEncerrado);
+        _timeoutPropagarInfo = new ElapsedEventHandler(PropagarInfo);
 
-        _temporizadorRecebimento.Elapsed += _evento;
+        _temporizadorPropagarInfo.Elapsed += _timeoutPropagarInfo;
+        _temporizadorPropagarInfo.AutoReset = true;
+
+        _temporizadorRecebimento.Elapsed += _timeoutRecebimento;
         _temporizadorRecebimento.AutoReset = true;
     }
 
@@ -82,7 +89,7 @@ public class Roteador
 
     public void ProcessarTabelaRoteamento()
     {
-        EnviarDatagramaInfo();
+        PropagarInfo();
 
         while (_roteadorAtivo)
         {
@@ -90,10 +97,15 @@ public class Roteador
 
             DatagramaInfo? datagramaInfoRecebido = _canal.ReceberDatagramaInfo(_tockenCancelamentoRecebimento.Token);
 
-            _temporizadorRecebimento.Stop();
-
             if (datagramaInfoRecebido != null)
             {
+                if (InformacaoRepetida(datagramaInfoRecebido))
+                {
+                    continue;
+                }
+
+                _temporizadorRecebimento.Stop();
+
                 if (Principal)
                 {
                     ImprimirDatagramaInfo(datagramaInfoRecebido);
@@ -190,10 +202,15 @@ public class Roteador
 
         if (_distanciaAtualizada)
         {
-            EnviarDatagramaInfo();
+            PropagarInfo();
 
             _distanciaAtualizada = false;
         }
+    }
+
+    private bool InformacaoRepetida(DatagramaInfo datagramaInfo)
+    {
+        return datagramaInfo.VetorDistancias.SequenceEqual(GetLinha(_matrizAdjacencia, datagramaInfo.OrigemId));
     }
 
     private void EnviarDatagramaInfo()
@@ -217,11 +234,25 @@ public class Roteador
                                                 .ToArray();
     }
 
-    private void TemporizadorEncerrado(object? sender, ElapsedEventArgs e)
+    private void TemporizadorRecebimentoEncerrado(object? sender, ElapsedEventArgs e)
     {
         _temporizadorRecebimento.Stop();
         _roteadorAtivo = false;
         _tockenCancelamentoRecebimento.Cancel();
+    }
+
+    private void PropagarInfo()
+    {
+        _temporizadorPropagarInfo.Stop();
+        EnviarDatagramaInfo();
+        _temporizadorPropagarInfo.Start();
+    }
+
+    private void PropagarInfo(object? sender, ElapsedEventArgs e)
+    {
+        _temporizadorPropagarInfo.Stop();
+        EnviarDatagramaInfo();
+        _temporizadorPropagarInfo.Start();
     }
 
     public void Fechar()
