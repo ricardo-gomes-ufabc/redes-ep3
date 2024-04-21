@@ -9,6 +9,8 @@ public class Principal
 
     private static readonly Random _aleatorio = new Random();
 
+    private static object _locker = new object();
+
     public static void Main(string[] args)
     {
         Console.WriteLine("Programa Iniciado.");
@@ -33,6 +35,8 @@ public class Principal
                     Roteador roteador = new Roteador(indice, Roteador.GetLinha(matriz, indice), principal: false);
 
                     roteador.ProcessarTabelaRoteamento();
+
+                    roteador.Fechar(_locker);
                 });
             }
             else
@@ -42,6 +46,8 @@ public class Principal
                     Roteador roteador = new Roteador(indice, Roteador.GetLinha(matriz, indice), principal: true);
 
                     roteador.ProcessarTabelaRoteamento();
+
+                    roteador.Fechar(_locker);
                 });
             }
 

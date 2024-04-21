@@ -22,7 +22,7 @@ public class Roteador
 
     private bool _distanciaAtualizada;
 
-    private const int _timeoutMilissegundos = 30000;
+    private const int _timeoutMilissegundos = 10000;
     private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
     private Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
     private ElapsedEventHandler _evento;
@@ -109,29 +109,30 @@ public class Roteador
 
         for (int i = 0; i < n; i++)
         {
-            int distanciaAntiga = _matrizAdjacencia[Id, datagramaInfo.OrigemId];
-
-            int distanciaNova;
-
-            int custoAoVizinho;
-            int distânciaVizinhoOrigem;
-
-            if (_matrizAdjacencia[datagramaInfo.OrigemId, i] == Infinito)
+            if (i != Id)
             {
-                distanciaNova = Infinito;
-            }
-            else
-            {
-                distanciaNova = datagramaInfo.VetorDistancias[i] + _matrizAdjacencia[datagramaInfo.OrigemId, i];
-            }
+                int distanciaAntiga = _matrizAdjacencia[Id, datagramaInfo.OrigemId];
 
-            if (distanciaNova < distanciaAntiga)
-            {
-                _matrizAdjacencia[Id, i] = distanciaNova;
-                _distanciaAtualizada = true;
-            }
+                int distanciaNova;
 
-            
+                int custoAoVizinho = _matrizAdjacencia[Id, i];
+                int distânciaVizinhoOrigem = _matrizAdjacencia[datagramaInfo.OrigemId, i];
+
+                if (custoAoVizinho == Infinito || distânciaVizinhoOrigem == Infinito)
+                {
+                    distanciaNova = Infinito;
+                }
+                else
+                {
+                    distanciaNova = custoAoVizinho + distânciaVizinhoOrigem;
+                }
+
+                if (distanciaNova < distanciaAntiga)
+                {
+                    _matrizAdjacencia[Id, datagramaInfo.OrigemId] = distanciaNova;
+                    _distanciaAtualizada = true;
+                }
+            }
         }
 
         if (_distanciaAtualizada)
@@ -168,12 +169,34 @@ public class Roteador
         _tockenCancelamentoRecebimento.Cancel();
     }
 
-    public void Fechar()
+    public void Fechar(object locker)
     {
-        _tockenCancelamentoRecebimento.Dispose();
+        lock (locker)
+        {
+            ImprimirTabela();
 
-        _temporizadorRecebimento.Dispose();
+            _tockenCancelamentoRecebimento.Dispose();
 
-        _canal.Fechar();
+            _temporizadorRecebimento.Dispose();
+
+            _canal.Fechar();
+        }
+    }
+
+    public void ImprimirTabela()
+    {
+        Console.WriteLine($"Tabela de Roteamento do Roteador {Id}:");
+
+        int n = _matrizAdjacencia.GetLength(dimension: 0);
+
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                Console.Write($"{_matrizAdjacencia[i, j]}, ");
+            }
+
+            Console.WriteLine();
+        }
     }
 }
