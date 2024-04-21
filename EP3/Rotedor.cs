@@ -12,7 +12,7 @@ public class Roteador
 
     private bool _roteadorAtivo = true;
 
-    private const int OffsetPorta = 10000;
+    private const int OffsetPorta = 20000;
     private const int Infinito = int.MaxValue;
 
     private Canal _canal;
@@ -117,6 +117,8 @@ public class Roteador
             }
         }
 
+        _temporizadorPropagarInfo.Stop();
+
         if (Principal)
         {
             Console.WriteLine("Nenhuma informação recebida até o timeout. Encerrando o Roteador.\n");
@@ -133,19 +135,16 @@ public class Roteador
             if (datagramaInfoRecebido.VetorDistancias[i] == Infinito)
             {
                 valoresVetor += "Infinito, ";
-
             }
             else
             {
                 valoresVetor += $"{datagramaInfoRecebido.VetorDistancias[i]}, ";
             }
-            
         }
 
         if (datagramaInfoRecebido.VetorDistancias[tamanhoVetor - 1] == Infinito)
         {
             valoresVetor += "Infinito";
-
         }
         else
         {
@@ -264,6 +263,7 @@ public class Roteador
 
         _tockenCancelamentoRecebimento.Dispose();
 
+        _temporizadorPropagarInfo.Dispose();
         _temporizadorRecebimento.Dispose();
 
         _canal.Fechar();

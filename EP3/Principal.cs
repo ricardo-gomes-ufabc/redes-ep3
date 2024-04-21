@@ -19,8 +19,8 @@ public class Principal
 
         int[,] matriz = CarregarMatriz(caminhoArquivo);
 
-        int idRoteadorSelecionado = 0;
-        //int idRoteadorSelecionado = _aleatorio.Next(minValue: 0, maxValue: matriz.GetLength(dimension: 0));
+        //int idRoteadorSelecionado = 0;
+        int idRoteadorSelecionado = _aleatorio.Next(minValue: 0, maxValue: matriz.GetLength(dimension: 0));
 
         Console.WriteLine($"Roteador selecionado: {idRoteadorSelecionado}\n");
 
@@ -67,8 +67,8 @@ public class Principal
         double mediaIteraçoes = threadsRoteadores.Select(t => t.Result.Item1).Average();
         double mediaDatagramasEnviados = threadsRoteadores.Select(t => t.Result.Item2).Average();
 
-        Console.WriteLine($"Média de iterações até finalização: {mediaIteraçoes}");
-        Console.WriteLine($"Média da quantidade de datagramas enviados: {mediaDatagramasEnviados}\n");
+        Console.WriteLine($"Média de iterações até finalização: {mediaIteraçoes:F}");
+        Console.WriteLine($"Média da quantidade de datagramas enviados: {mediaDatagramasEnviados:F}\n");
 
         Console.WriteLine("Programa Encerrado.");
     }
