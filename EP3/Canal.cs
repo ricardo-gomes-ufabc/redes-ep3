@@ -89,7 +89,16 @@ public class Canal
 
     private DatagramaInfo? ByteArrayParaDatagramaInfo(byte[] byteArray)
     {
-        return JsonSerializer.Deserialize<DatagramaInfo>(Encoding.UTF8.GetString(byteArray));
+        string encoding = Encoding.UTF8.GetString(byteArray);
+
+        DatagramaInfo datagramaInfo = JsonSerializer.Deserialize<DatagramaInfo>(encoding);
+
+        if (datagramaInfo is { VetorDistancias: null })
+        {
+            throw new JsonException();
+        }
+
+        return datagramaInfo;
     }
 
     private void EnviarDatagramaInfo(byte[]? bytesDatagramaInfo, IPEndPoint pontoConexaoRemoto)
