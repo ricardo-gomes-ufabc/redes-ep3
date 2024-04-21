@@ -33,10 +33,19 @@ public class Roteador
     public int Iterações;
     public int DatagramasEnviados;
 
+    private bool _mudarValor;
+
+    private bool _naoEnviarOuReceber;
+
     public Roteador(int id, int[] vetorDistancias, bool principal)
     {
         Id = id;
         Principal = principal;
+
+        //if (Id == 1 || Id == 2)
+        //{
+        //    _mudarValor = true;
+        //}
 
         _canal = new Canal(OffsetPorta + id, Principal);
 
@@ -89,6 +98,16 @@ public class Roteador
 
     public void ProcessarTabelaRoteamento()
     {
+        if (Id == 1)
+        {
+            _naoEnviarOuReceber = true;
+        }
+
+        if (_naoEnviarOuReceber)
+        {
+            return;
+        }
+
         PropagarInfo();
 
         while (_roteadorAtivo)
@@ -257,7 +276,24 @@ public class Roteador
     private void PropagarInfo(object? sender, ElapsedEventArgs e)
     {
         _temporizadorPropagarInfo.Stop();
+
+        //if (_mudarValor)
+        //{
+        //    if (Id == 1)
+        //    {
+        //        _matrizAdjacencia[1, 2] = 7;
+        //    }
+
+        //    if (Id == 2)
+        //    {
+        //        _matrizAdjacencia[2, 1] = 7;
+        //    }
+
+        //    _mudarValor = false;
+        //}
+
         EnviarDatagramaInfo();
+
         _temporizadorPropagarInfo.Start();
     }
 

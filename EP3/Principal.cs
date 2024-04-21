@@ -19,8 +19,8 @@ public class Principal
 
         int[,] matriz = CarregarMatriz(caminhoArquivo);
 
-        //int idRoteadorSelecionado = 0;
-        int idRoteadorSelecionado = _aleatorio.Next(minValue: 0, maxValue: matriz.GetLength(dimension: 0));
+        int idRoteadorSelecionado = 0;
+        //int idRoteadorSelecionado = _aleatorio.Next(minValue: 0, maxValue: matriz.GetLength(dimension: 0));
 
         Console.WriteLine($"Roteador selecionado: {idRoteadorSelecionado}\n");
 
