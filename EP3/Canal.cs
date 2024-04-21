@@ -144,7 +144,7 @@ public class Canal
 
             EnviarDatagramaInfo(null, pontoConexaoRemoto);
 
-            Console.WriteLine($"Mensagem eliminada.");
+            Console.WriteLine($"Mensagem eliminada.\n");
 
             return;
         }
@@ -157,28 +157,28 @@ public class Canal
 
             EnviarDatagramaInfo(bytesDatagramaInfo, pontoConexaoRemoto);
 
-            Console.WriteLine($"Mensagem duplicada.");
+            Console.WriteLine($"Mensagem duplicada.\n");
         }
 
         if (DeveriaAplicarPropriedade(_probabilidadeCorrupcao))
         {
             CorromperSegmento(ref bytesDatagramaInfo);
             _totalMensagensCorrompidas++;
-            Console.WriteLine($"Mensagem corrompida.");
+            Console.WriteLine($"Mensagem corrompida.\n");
         }
 
         if (bytesDatagramaInfo.Length > _tamanhoMaximoBytes)
         {
             CortarSegmento(ref bytesDatagramaInfo);
             _totalMensagensCortadas++;
-            Console.WriteLine($"Mensagem cortada.");
+            Console.WriteLine($"Mensagem cortada.\n");
         }
 
         if (_delayMilissegundos != 0)
         {
             Thread.Sleep(_delayMilissegundos);
             _totalMensagensAtrasadas++;
-            Console.WriteLine($"Mensagem atrasada.");
+            Console.WriteLine($"Mensagem atrasada.\n");
         }
 
         EnviarDatagramaInfo(bytesDatagramaInfo, pontoConexaoRemoto);
@@ -231,84 +231,3 @@ public class Canal
 
     #endregion
 }
-
-#region Classe Threads
-
-//public class Threads
-//{
-//    private Canal _canal;
-
-//    private CancellationTokenSource _tockenCancelamentoRecebimento = new CancellationTokenSource();
-
-//    private static int _timeoutMilissegundos = 500;
-//    private static Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
-
-//    public Threads(IPEndPoint pontoConexaoLocal, IPEndPoint pontoConexaoRemoto)
-//    {
-//        _canal = new Canal(pontoConexaoLocal, pontoConexaoRemoto);
-//    }
-
-//    public Threads(IPEndPoint pontoConexaoLocal)
-//    {
-//        _canal = new Canal(pontoConexaoLocal);
-//    }
-
-//    #region Envio e Recebimento
-
-//    public void EnviarSegmento(SegmentoConfiavel segmento)
-//    {
-//        _canal.ProcessarMensagem(segmento);
-//    }
-
-//    public SegmentoConfiavel? ReceberSegmento()
-//    {
-//        SegmentoConfiavel? segmentoRecebido;
-
-//        segmentoRecebido = _canal.ReceberSegmento(_tockenCancelamentoRecebimento.Token);
-
-//        if (_tockenCancelamentoRecebimento.Token.IsCancellationRequested)
-//        {
-//            _tockenCancelamentoRecebimento = new CancellationTokenSource();
-//        }
-
-//        return segmentoRecebido;
-//    }
-
-//    public void CancelarRecebimento()
-//    {
-//        _tockenCancelamentoRecebimento.Cancel();
-//    }
-
-//    #endregion
-
-//    #region Timeout
-
-//    public void ConfigurarTemporizador(ElapsedEventHandler evento)
-//    {
-//        _temporizadorRecebimento.Elapsed += evento;
-//        _temporizadorRecebimento.AutoReset = true;
-//    }
-
-//    public void IniciarTemporizador()
-//    {
-//        _temporizadorRecebimento.Enabled = true;
-//    }
-
-//    public void PararTemporizador()
-//    {
-//        _temporizadorRecebimento.Stop();
-//    }
-
-//    public void Fechar()
-//    {
-//        _tockenCancelamentoRecebimento.Dispose();
-
-//        _temporizadorRecebimento.Dispose();
-
-//        _canal.Fechar();
-//    }
-
-//    #endregion
-//}
-
-#endregion

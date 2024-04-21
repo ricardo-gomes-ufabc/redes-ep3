@@ -27,6 +27,9 @@ public class Roteador
     private Timer _temporizadorRecebimento = new Timer(_timeoutMilissegundos);
     private ElapsedEventHandler _evento;
 
+    public int Iterações;
+    public int DatagramasEnviados;
+
     public Roteador(int id, int[] vetorDistancias, bool principal)
     {
         Id = id;
@@ -97,6 +100,8 @@ public class Roteador
                 }
 
                 AtualizarMatrizAdjacencias(datagramaInfoRecebido);
+
+                Iterações++;
             }
         }
 
@@ -188,6 +193,8 @@ public class Roteador
             EnviarDatagramaInfo();
 
             _distanciaAtualizada = false;
+
+            DatagramasEnviados++;
         }
 
         if (Principal)
@@ -258,7 +265,5 @@ public class Roteador
 
             Console.WriteLine();
         }
-
-        
     }
 }
