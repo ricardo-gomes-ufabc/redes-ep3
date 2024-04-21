@@ -193,8 +193,6 @@ public class Roteador
             EnviarDatagramaInfo();
 
             _distanciaAtualizada = false;
-
-            DatagramasEnviados++;
         }
     }
 
@@ -208,6 +206,8 @@ public class Roteador
         {
             _canal.ProcessarMensagem(datagramaInfo, vizinho);
         }
+
+        DatagramasEnviados++;
     }
 
     public static int[] GetLinha(int[,] matrix, int linha)
