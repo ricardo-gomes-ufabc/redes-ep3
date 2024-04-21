@@ -205,9 +205,12 @@ public class Canal
 
     #region Finalização
 
-    public void Fechar()
+    public void Fechar(bool principal)
     {
-        //ConsolidarResultados();
+        if (principal)
+        {
+            ConsolidarResultados();
+        }
 
         _socket.Close();
 

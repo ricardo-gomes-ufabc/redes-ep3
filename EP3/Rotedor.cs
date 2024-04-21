@@ -91,24 +91,50 @@ public class Roteador
 
             if (datagramaInfoRecebido != null)
             {
+                if (Principal)
+                {
+                    ImprimirDatagramaInfo(datagramaInfoRecebido);
+                }
+
                 AtualizarMatrizAdjacencias(datagramaInfoRecebido);
             }
         }
+
+        if (Principal)
+        {
+            Console.WriteLine("Nenhuma informação recebida até o timeout. Encerrando o Roteador.\n");
+        }
+    }
+
+    private void ImprimirDatagramaInfo(DatagramaInfo datagramaInfoRecebido)
+    {
+        int tamanhoVetor = datagramaInfoRecebido.VetorDistancias.Length;
+        string valoresVetor = "- Vetor de distâncias do DatagramaInfo: ";
+
+        for (int i = 0; i < tamanhoVetor - 1; i++)
+        {
+            valoresVetor += $"{datagramaInfoRecebido.VetorDistancias[i]}, ";
+        }
+
+        valoresVetor += $"{datagramaInfoRecebido.VetorDistancias[tamanhoVetor - 1]}";
+
+        Console.WriteLine($"DatagramaInfo enviado pelo Roteador {datagramaInfoRecebido.OrigemId}");
+        Console.WriteLine($"{valoresVetor}\n");
     }
 
     private void AtualizarMatrizAdjacencias(DatagramaInfo datagramaInfo)
     {
         int n = datagramaInfo.VetorDistancias.Length;
 
+        if (Principal)
+        {
+            Console.WriteLine($"Vetor de distâncias do Roteador {datagramaInfo.OrigemId} atualizada");
+        }
+
         for (int i = 0; i < n; i++)
         {
             _matrizAdjacencia[datagramaInfo.OrigemId, i] = datagramaInfo.VetorDistancias[i];
-        }
 
-        //Arrumar lógica de cálculo de distância nova minima;
-
-        for (int i = 0; i < n; i++)
-        {
             if (i != Id)
             {
                 int distanciaAntiga = _matrizAdjacencia[Id, datagramaInfo.OrigemId];
@@ -131,6 +157,11 @@ public class Roteador
                 {
                     _matrizAdjacencia[Id, datagramaInfo.OrigemId] = distanciaNova;
                     _distanciaAtualizada = true;
+
+                    if (Principal)
+                    {
+                        Console.WriteLine($"Nova rota de menor custo encontrada entre Roteador {Id} e {datagramaInfo.OrigemId}: {distanciaAntiga} -> {distanciaNova}");
+                    }
                 }
             }
         }
@@ -140,6 +171,11 @@ public class Roteador
             EnviarDatagramaInfo();
 
             _distanciaAtualizada = false;
+        }
+
+        if (Principal)
+        {
+            Console.WriteLine();
         }
     }
 
@@ -171,16 +207,16 @@ public class Roteador
 
     public void Fechar(object locker)
     {
-        lock (locker)
+        if (Principal)
         {
             ImprimirTabela();
-
-            _tockenCancelamentoRecebimento.Dispose();
-
-            _temporizadorRecebimento.Dispose();
-
-            _canal.Fechar();
         }
+
+        _tockenCancelamentoRecebimento.Dispose();
+
+        _temporizadorRecebimento.Dispose();
+
+        _canal.Fechar(Principal);
     }
 
     public void ImprimirTabela()

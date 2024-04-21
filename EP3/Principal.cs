@@ -13,7 +13,7 @@ public class Principal
 
     public static void Main(string[] args)
     {
-        Console.WriteLine("Programa Iniciado.");
+        Console.WriteLine("Programa Iniciado.\n");
 
         string caminhoArquivo = $"{AppContext.BaseDirectory}/matriz.txt";
 
@@ -21,6 +21,8 @@ public class Principal
 
         int idRoteadorSelecionado = 0;
         //int idRoteadorSelecionado = _aleatorio.Next(minValue: 0, maxValue: matriz.GetLength(dimension: 0));
+
+        Console.WriteLine($"Roteador selecionado: {idRoteadorSelecionado}\n");
 
         for (int i = 0; i < matriz.GetLength(0); i++)
         {
