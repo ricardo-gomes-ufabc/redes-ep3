@@ -205,9 +205,9 @@ public class Roteador
         foreach (IPEndPoint vizinho in vizinhos)
         {
             _canal.ProcessarMensagem(datagramaInfo, vizinho);
-        }
 
-        DatagramasEnviados++;
+            DatagramasEnviados++;
+        }
     }
 
     public static int[] GetLinha(int[,] matrix, int linha)

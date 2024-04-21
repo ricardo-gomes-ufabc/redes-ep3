@@ -65,7 +65,7 @@ public class Principal
         threadsRoteadores.ForEach(t => t.Wait());
 
         double mediaIteraçoes = threadsRoteadores.Select(t => t.Result.Item1).Average();
-        double mediaDatagramasEnviados = threadsRoteadores.Select(t => t.Result.Item1).Average();
+        double mediaDatagramasEnviados = threadsRoteadores.Select(t => t.Result.Item2).Average();
 
         Console.WriteLine($"Média de iterações até finalização: {mediaIteraçoes}");
         Console.WriteLine($"Média da quantidade de datagramas enviados: {mediaDatagramasEnviados}\n");
